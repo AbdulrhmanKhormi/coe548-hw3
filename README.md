@@ -1,12 +1,15 @@
 # Coe548 HW3
 
 To deploy the stack you should have nodejs and aws cdk installed, to install aws cdk run:
+
 npm install -g aws-cdk
 
 If you get permission error run this:
+
 sudo npm install -g aws-cdk
 
 After cdk is installed run command below to install required packages:
+
 npm install
 
 You should have aws access key and secret key stored in:
