@@ -9,74 +9,39 @@ export class Coe548H3Stack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
-    // Create Lambda functions
-    const addLambda = this.createLambda(
-      "AddLambda",
-      "add.lambda_handler",
-      "lambda/add",
-    );
-    const subLambda = this.createLambda(
-      "SubLambda",
-      "sub.lambda_handler",
-      "lambda/sub",
-    );
-    const mulLambda = this.createLambda(
-      "MulLambda",
-      "mul.lambda_handler",
-      "lambda/mul",
-    );
-    const divLambda = this.createLambda(
-      "DivLambda",
-      "div.lambda_handler",
-      "lambda/div",
+    const lambdas_names = ["add", "sub", "mul", "div"];
+
+    const lambdas = lambdas_names.reduce(
+      (acc, name) => {
+        acc[name] = new lambda.Function(this, `${name}Lambda`, {
+          runtime: lambda.Runtime.PYTHON_3_11,
+          code: lambda.Code.fromAsset(`lambda/${name}`),
+          handler: `${name}.lambda_handler`,
+        });
+        return acc;
+      },
+      {} as Record<string, lambda.Function>,
     );
 
-    // Create an HTTP API Gateway
     const httpApi = new apigatewayv2.HttpApi(this, "ArithmeticHttpApi", {
       apiName: "ArithmeticService",
       description: "API Gateway V2 HTTP API for arithmetic operations",
     });
 
-    // Add routes to the HTTP API for each Lambda function
-    this.addApiRoute(httpApi, addLambda, "add");
-    this.addApiRoute(httpApi, subLambda, "sub");
-    this.addApiRoute(httpApi, mulLambda, "mul");
-    this.addApiRoute(httpApi, divLambda, "div");
+    lambdas_names.forEach((name) => {
+      httpApi.addRoutes({
+        path: `/${name}`,
+        methods: [apigatewayv2.HttpMethod.POST],
+        integration: new integrations.HttpLambdaIntegration(
+          `${name}Integration`,
+          lambdas[name],
+        ),
+      });
+    });
 
     new cdk.CfnOutput(this, "ApiUrl", {
       value: httpApi.apiEndpoint,
       description: "URL of the API Gateway",
-    });
-  }
-
-  // Helper method to create Lambda functions
-  private createLambda(
-    id: string,
-    handler: string,
-    asset: string,
-  ): lambda.Function {
-    return new lambda.Function(this, id, {
-      runtime: lambda.Runtime.PYTHON_3_11,
-      code: lambda.Code.fromAsset(asset),
-      handler: handler,
-    });
-  }
-
-  // Helper method to add API Gateway V2 route for a Lambda function
-  private addApiRoute(
-    httpApi: apigatewayv2.HttpApi,
-    lambdaFunction: lambda.Function,
-    routePath: string,
-  ): void {
-    const integration = new integrations.HttpLambdaIntegration(
-      `${routePath}Integration`,
-      lambdaFunction,
-    );
-
-    httpApi.addRoutes({
-      path: `/${routePath}`,
-      methods: [apigatewayv2.HttpMethod.POST],
-      integration: integration,
     });
   }
 }
