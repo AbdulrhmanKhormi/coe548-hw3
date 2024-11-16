@@ -21,4 +21,4 @@ def lambda_handler(event, context):
     # a Python object (dict):
     response = {"X": num1, "Y": num2, "result": result}
 
-    return json.dumps(response)
+    return {"statusCode": 200, "body": json.dumps(response)}

@@ -1,8 +1,7 @@
 import { Stack, StackProps } from "aws-cdk-lib";
 import * as cdk from "aws-cdk-lib";
 import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as apigatewayv2 from "aws-cdk-lib/aws-apigatewayv2";
-import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as apigateway from "aws-cdk-lib/aws-apigateway";
 import { Construct } from "constructs";
 
 export class Coe548H3Stack extends Stack {
@@ -23,24 +22,21 @@ export class Coe548H3Stack extends Stack {
       {} as Record<string, lambda.Function>,
     );
 
-    const httpApi = new apigatewayv2.HttpApi(this, "ArithmeticHttpApi", {
-      apiName: "ArithmeticService",
-      description: "API Gateway V2 HTTP API for arithmetic operations",
+    const restApi = new apigateway.RestApi(this, "ArithmeticRestApi", {
+      restApiName: "ArithmeticService",
+      description: "API Gateway REST API for arithmetic operations",
     });
 
     lambdas_names.forEach((name) => {
-      httpApi.addRoutes({
-        path: `/${name}`,
-        methods: [apigatewayv2.HttpMethod.POST],
-        integration: new integrations.HttpLambdaIntegration(
-          `${name}Integration`,
-          lambdas[name],
-        ),
-      });
+      const resource = restApi.root.addResource(name);
+      resource.addMethod(
+        "POST",
+        new apigateway.LambdaIntegration(lambdas[name]),
+      );
     });
 
     new cdk.CfnOutput(this, "ApiUrl", {
-      value: httpApi.apiEndpoint,
+      value: restApi.url,
       description: "URL of the API Gateway",
     });
   }
